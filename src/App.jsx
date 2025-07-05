@@ -179,7 +179,7 @@ const App = () => {
   // ElevenLabs API configuration
   // IMPORTANT: The API key will be provided by the Canvas environment at runtime.
   // Do NOT hardcode your actual API key here.
-  const ELEVENLABS_API_KEY = "sk_6c85bc8b9c2c840031926ab89fa261d0b152b9581a0ada73"; 
+  const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
   // A good Portuguese (Brazil) voice ID from ElevenLabs (e.g., Rafa)
   const ELEVENLABS_VOICE_ID = "oNn9BiqiwwzLKvft8EmY"; // You can change this to another voice ID if you have one
 
@@ -366,10 +366,19 @@ const App = () => {
   };
 
 
- return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-purple-500 to-indigo-600 flex flex-col items-center justify-center p-4 font-inter">
       <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl text-center">
-        <h1 className="text-4xl font-extrabold text-gray-800 mb-6 fala-pai-title">FalaPai</h1>
+        {/* Título estilizado */}
+        <h1 className="text-6xl font-extrabold mb-6" style={{
+          background: 'linear-gradient(45deg, #8B5CF6, #EC4899)', /* Gradiente de roxo para rosa */
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.2)', /* Sombra sutil */
+          letterSpacing: '0.05em' /* Espaçamento entre letras */
+        }}>
+          FalaPai
+        </h1>
         <p className="text-gray-600 mb-8 text-lg">
           Olá Carlos, sou seu assistente de comunicação inteligente.
         </p>
