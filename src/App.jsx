@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"; // Certifique-se de que esta biblioteca está instalada (npm install @hello-pangea/dnd)
 
 // Custom Message Modal Component
 const MessageModal = ({ message, onClose }) => {
@@ -17,13 +18,13 @@ const MessageModal = ({ message, onClose }) => {
   );
 };
 
-// Custom Input Modal Component for adding phrases
-const InputModal = ({ title, placeholder, onConfirm, onCancel }) => {
-  const [inputValue, setInputValue] = useState("");
+// Custom Input Modal Component for adding/editing phrases
+const InputModal = ({ title, placeholder, onConfirm, onCancel, initialValue = '' }) => {
+  const [inputValue, setInputValue] = useState(initialValue);
 
   const handleConfirm = () => {
     onConfirm(inputValue);
-    setInputValue(""); // Clear input after confirming
+    setInputValue(''); // Clear input after confirming
   };
 
   return (
@@ -42,7 +43,7 @@ const InputModal = ({ title, placeholder, onConfirm, onCancel }) => {
             onClick={handleConfirm}
             className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 mr-2"
           >
-            Adicionar
+            {initialValue ? 'Salvar Edição' : 'Adicionar'}
           </button>
           <button
             onClick={onCancel}
@@ -81,15 +82,15 @@ const ConfirmationModal = ({ message, onConfirm, onCancel }) => {
   );
 };
 
-const AddLongTextModal = ({ onConfirm, onCancel }) => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+const AddLongTextModal = ({ onConfirm, onCancel, initialTitle = '', initialContent = '' }) => {
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full text-left">
         <h3 className="text-xl font-bold text-gray-800 mb-4">
-          Nova Frase Longa
+          {initialTitle ? 'Editar Frase Longa' : 'Nova Frase Longa'}
         </h3>
         <input
           type="text"
@@ -117,7 +118,7 @@ const AddLongTextModal = ({ onConfirm, onCancel }) => {
               if (title && content) onConfirm({ title, content });
             }}
           >
-            Salvar
+            {initialTitle ? 'Salvar Edição' : 'Salvar'}
           </button>
         </div>
       </div>
@@ -129,19 +130,22 @@ const AddLongTextModal = ({ onConfirm, onCancel }) => {
 const App = () => {
   // State for the text input by the user
   const [inputText, setInputText] = useState("");
-  // State for managing quick phrases
-  const [quickPhrases, setQuickPhrases] = useState([
-    "Alan, precisamos comprar banana",
-    "Denis, você pode me ajudar?",
-    "Preciso de ajuda, por favor.",
-    "Estou com sede.",
-    "Estou com fome.",
-    "Sim",
-    "Não",
-    "Obrigado(a)",
-    "Estou bem",
-    "Não entendi",
-  ]);
+  // State for managing quick phrases (carregadas do localStorage se disponíveis)
+  const [quickPhrases, setQuickPhrases] = useState(() => {
+    const saved = localStorage.getItem("quickPhrases");
+    return saved ? JSON.parse(saved) : [
+      "Alan, precisamos comprar banana",
+      "Denis, você pode me ajudar?",
+      "Preciso de ajuda, por favor.",
+      "Estou com sede.",
+      "Estou com fome.",
+      "Sim",
+      "Não",
+      "Obrigado(a)",
+      "Estou bem",
+      "Não entendi",
+    ];
+  });
 
   const [savedTexts, setSavedTexts] = useState(() => {
     const saved = localStorage.getItem("savedTexts");
@@ -156,6 +160,11 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem("savedTexts", JSON.stringify(savedTexts));
   }, [savedTexts]);
+
+  // Effect to persist quick phrases to localStorage
+  useEffect(() => {
+    localStorage.setItem("quickPhrases", JSON.stringify(quickPhrases));
+  }, [quickPhrases]);
   
   // State for loading status during speech synthesis
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -179,9 +188,9 @@ const App = () => {
   // ElevenLabs API configuration
   // IMPORTANT: The API key will be provided by the Canvas environment at runtime.
   // Do NOT hardcode your actual API key here.
-  const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
+  const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY; // Ensure this is set in your environment variables
   // A good Portuguese (Brazil) voice ID from ElevenLabs (e.g., Rafa)
-  const ELEVENLABS_VOICE_ID = "oNn9BiqiwwzLKvft8EmY"; // You can change this to another voice ID if you have one
+  const ELEVENLABS_VOICE_ID = "Iru1M1vQRERrzixU4SHr"; // You can change this to another voice ID if you have one
 
   // Function to handle text-to-speech conversion using ElevenLabs
   const speakText = async (textToSpeak) => {
@@ -274,7 +283,7 @@ const App = () => {
     }
   };
 
-  // Handle input change
+  // Handle input change for main text area
   const handleChange = (e) => {
     setInputText(e.target.value);
   };
@@ -309,22 +318,45 @@ const App = () => {
     setModalMessage(null);
   };
 
+  // --- Quick Phrase Edit/Add Logic ---
+  const [showEditQuickPhraseModal, setShowEditQuickPhraseModal] = useState(false);
+  const [editingQuickPhrase, setEditingQuickPhrase] = useState(null); // Stores the phrase being edited
+
   // Handle adding a new quick phrase - opens the input modal
   const handleAddQuickPhrase = () => {
+    setEditingQuickPhrase(null); // Ensure no phrase is being edited
     setShowAddPhraseModal(true);
   };
 
-  // Confirm adding a new phrase from the input modal
-  const confirmAddPhrase = (newPhrase) => {
-    if (newPhrase && newPhrase.trim()) {
-      setQuickPhrases([...quickPhrases, newPhrase.trim()]);
-    }
-    setShowAddPhraseModal(false);
+  // Handle editing a quick phrase - opens the input modal with current value
+  const handleEditQuickPhrase = (phrase) => {
+    setEditingQuickPhrase(phrase);
+    setShowEditQuickPhraseModal(true);
   };
 
-  // Cancel adding a new phrase
-  const cancelAddPhrase = () => {
+  // Confirm adding/editing a quick phrase from the input modal
+  const confirmQuickPhrase = (newPhraseValue) => {
+    if (newPhraseValue && newPhraseValue.trim()) {
+      if (editingQuickPhrase) {
+        // Editing existing phrase
+        setQuickPhrases(prevPhrases =>
+          prevPhrases.map(p => (p === editingQuickPhrase ? newPhraseValue.trim() : p))
+        );
+      } else {
+        // Adding new phrase
+        setQuickPhrases(prevPhrases => [...prevPhrases, newPhraseValue.trim()]);
+      }
+    }
     setShowAddPhraseModal(false);
+    setShowEditQuickPhraseModal(false);
+    setEditingQuickPhrase(null);
+  };
+
+  // Cancel adding/editing a quick phrase
+  const cancelQuickPhraseModal = () => {
+    setShowAddPhraseModal(false);
+    setShowEditQuickPhraseModal(false);
+    setEditingQuickPhrase(null);
   };
 
   // Handle deleting a quick phrase - opens the confirmation modal
@@ -346,6 +378,47 @@ const App = () => {
     setShowDeleteConfirmModal(false);
   };
 
+  // --- Long Saved Text Edit/Add Logic ---
+  const [showEditLongTextModal, setShowEditLongTextModal] = useState(false);
+  const [editingLongText, setEditingLongText] = useState(null); // Stores the long text object being edited
+
+  // Handle adding a new long text - opens the modal
+  const handleAddLongText = () => {
+    setEditingLongText(null); // Ensure no text is being edited
+    setShowAddLongTextModal(true);
+  };
+
+  // Handle editing a long text - opens the modal with current values
+  const handleEditLongText = (item) => {
+    setEditingLongText(item);
+    setShowEditLongTextModal(true);
+  };
+
+  // Confirm adding/editing a long text from the modal
+  const confirmLongText = (newItemValue) => {
+    if (newItemValue.title && newItemValue.content) {
+      if (editingLongText) {
+        // Editing existing long text
+        setSavedTexts(prevTexts =>
+          prevTexts.map(t => (t === editingLongText ? newItemValue : t))
+        );
+      } else {
+        // Adding new long text
+        setSavedTexts(prevTexts => [...prevTexts, newItemValue]);
+      }
+    }
+    setShowAddLongTextModal(false);
+    setShowEditLongTextModal(false);
+    setEditingLongText(null);
+  };
+
+  // Cancel adding/editing a long text
+  const cancelLongTextModal = () => {
+    setShowAddLongTextModal(false);
+    setShowEditLongTextModal(false);
+    setEditingLongText(null);
+  };
+
   // Handle deleting a long saved text - opens the confirmation modal
   const handleDeleteLongText = (item) => {
     setLongTextToDelete(item);
@@ -365,6 +438,16 @@ const App = () => {
     setShowDeleteLongTextConfirmModal(false);
   };
 
+  // Drag and Drop Logic for Quick Phrases
+  const onDragEnd = (result) => {
+    if (!result.destination) return; // Dropped outside a droppable area
+
+    const items = Array.from(quickPhrases);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setQuickPhrases(items);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-500 to-indigo-600 flex flex-col items-center justify-center p-4 font-inter">
@@ -429,12 +512,37 @@ const App = () => {
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             Frases Rápidas
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-            {quickPhrases.map((phrase, index) => (
-              <div key={index} className="relative">
-                <button
-                  onClick={() => handleQuickPhraseClick(phrase)}
-                  className={`w-full text-white font-semibold py-3 px-4 rounded-xl shadow-md transform transition duration-200 ease-in-out text-md
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="quickPhrases">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4"
+                >
+                  {quickPhrases.map((phrase, index) => (
+                    <Draggable key={phrase} draggableId={phrase} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`relative rounded-xl shadow-md transform transition duration-200 ease-in-out
+                                      ${snapshot.isDragging ? 'bg-blue-200 scale-105' : ''}
+                                      ${isSpeaking && currentPlayingText !== phrase ? 'opacity-50' : ''}
+                                      flex items-center gap-2 p-1`}
+                          style={{ ...provided.draggableProps.style }}
+                        >
+                          {/* Drag Handle */}
+                          <span
+                            {...provided.dragHandleProps}
+                            className="cursor-grab text-gray-400 hover:text-gray-600 select-none text-2xl px-2" // Styled handle
+                            title="Arrastar"
+                          >
+                            ≡
+                          </span>
+                          <button
+                            onClick={() => handleQuickPhraseClick(phrase)}
+                            className={`flex-1 text-white font-semibold py-3 px-4 rounded-xl pr-[4.5rem] // Ajuste o padding-right para dar espaço aos botões
                                                 ${
                                                   isSpeaking && currentPlayingText !== phrase
                                                     ? "bg-gray-400 cursor-not-allowed" // Disable if another text is playing
@@ -443,26 +551,45 @@ const App = () => {
                                                     : isSpeaking && currentPlayingText === phrase && isPaused
                                                     ? "bg-green-600 hover:bg-green-700" // Resume color
                                                     : "bg-blue-500 hover:bg-blue-600 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                }`}
-                  disabled={isSpeaking && currentPlayingText !== phrase} // Disable button if another text is playing
-                >
-                  {isSpeaking && currentPlayingText === phrase && !isPaused
-                    ? "Pausar"
-                    : isSpeaking && currentPlayingText === phrase && isPaused
-                    ? "Continuar"
-                    : phrase}
-                </button>
-                <button
-                  onClick={() => handleDeleteQuickPhrase(phrase)}
-                  className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold"
-                  title="Excluir frase"
-                  disabled={isSpeaking} // Disable button while speaking
-                >
-                  X
-                </button>
-              </div>
-            ))}
-          </div>
+                                                }
+                                                overflow-hidden text-ellipsis whitespace-nowrap`}
+                            disabled={isSpeaking && currentPlayingText !== phrase} // Disable button if another text is playing
+                          >
+                            {isSpeaking && currentPlayingText === phrase && !isPaused
+                              ? "Pausar"
+                              : isSpeaking && currentPlayingText === phrase && isPaused
+                              ? "Continuar"
+                              : phrase}
+                          </button>
+                          {/* Container para os botões de ação para melhor posicionamento */}
+                          <div className="absolute top-1 right-1 flex gap-1">
+                            {/* Edit button for Quick Phrases */}
+                            <button
+                              onClick={() => handleEditQuickPhrase(phrase)}
+                              className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold" // Ajustado w/h e text-sm
+                              title="Editar frase"
+                              disabled={isSpeaking}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteQuickPhrase(phrase)}
+                              className="bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold" // Ajustado w/h e text-sm
+                              title="Excluir frase"
+                              disabled={isSpeaking} // Disable button while speaking
+                            >
+                              X
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
           <button
             onClick={handleAddQuickPhrase}
             className={`w-full text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition duration-300 ease-in-out text-xl
@@ -526,6 +653,15 @@ const App = () => {
                       ? "Continuar"
                       : "Falar"}
                   </button>
+                  {/* Edit button for Long Saved Texts */}
+                  <button
+                    onClick={() => handleEditLongText(item)}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+                    title="Editar frase longa"
+                    disabled={isSpeaking}
+                  >
+                    Editar
+                  </button>
                   <button
                     onClick={() => handleDeleteLongText(item)}
                     className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold"
@@ -538,7 +674,7 @@ const App = () => {
               </div>
             ))}
             <button
-              onClick={() => setShowAddLongTextModal(true)}
+              onClick={handleAddLongText}
               className="w-full text-white font-bold py-3 px-6 rounded-xl bg-green-600 hover:bg-green-700 transition"
               disabled={isSpeaking} // Disable button while speaking
             >
@@ -547,11 +683,13 @@ const App = () => {
           </div>
         </div>
 
+
         {/* Footer */}
         <p className="text-gray-500 text-sm mt-8">
           Desenvolvido por <span className="text-red-500">Alan Regis</span> para
           facilitar a comunicação.
         </p>
+        <p className="text-gray-400 text-xs mt-1">v1.0.2</p>
       </div>
 
       {/* Message Modal */}
@@ -559,23 +697,24 @@ const App = () => {
         <MessageModal message={modalMessage} onClose={closeModal} />
       )}
 
-      {/* Add Phrase Input Modal */}
-      {showAddPhraseModal && (
+      {/* Add/Edit Quick Phrase Modal */}
+      {(showAddPhraseModal || showEditQuickPhraseModal) && (
         <InputModal
-          title="Adicionar Nova Frase Rápida"
-          placeholder="Digite a nova frase aqui..."
-          onConfirm={confirmAddPhrase}
-          onCancel={cancelAddPhrase}
+          title={editingQuickPhrase ? "Editar Frase Rápida" : "Adicionar Nova Frase Rápida"}
+          placeholder="Digite a frase aqui..."
+          initialValue={editingQuickPhrase || ''}
+          onConfirm={confirmQuickPhrase}
+          onCancel={cancelQuickPhraseModal}
         />
       )}
 
-      {showAddLongTextModal && (
+      {/* Add/Edit Long Text Modal */}
+      {(showAddLongTextModal || showEditLongTextModal) && (
         <AddLongTextModal
-          onConfirm={(newItem) => {
-            setSavedTexts([...savedTexts, newItem]);
-            setShowAddLongTextModal(false);
-          }}
-          onCancel={() => setShowAddLongTextModal(false)}
+          initialTitle={editingLongText ? editingLongText.title : ''}
+          initialContent={editingLongText ? editingLongText.content : ''}
+          onConfirm={confirmLongText}
+          onCancel={cancelLongTextModal}
         />
       )}
 
