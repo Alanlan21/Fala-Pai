@@ -192,6 +192,11 @@ const App = () => {
   // A good Portuguese (Brazil) voice ID from ElevenLabs (e.g., Rafa)
   const ELEVENLABS_VOICE_ID = "Iru1M1vQRERrzixU4SHr"; // You can change this to another voice ID if you have one
 
+  // Removed AI Agent states and functions as per user request
+  // const [aiPromptInput, setAiPromptInput] = useState('');
+  // const [aiConversationHistory, setAiConversationHistory] = useState([]);
+  // const [isAILoading, setIsAILoading] = useState(false);
+
   // Function to handle text-to-speech conversion using ElevenLabs
   const speakText = async (textToSpeak) => {
     if (!textToSpeak.trim()) {
@@ -286,6 +291,20 @@ const App = () => {
   // Handle input change for main text area
   const handleChange = (e) => {
     setInputText(e.target.value);
+  };
+
+  // Function to clear the main input text
+  const handleClearInput = () => {
+    setInputText("");
+    // Optionally, stop any ongoing speech if clearing the input
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      URL.revokeObjectURL(audioRef.current.src);
+      setIsSpeaking(false);
+      setIsPaused(false);
+      setCurrentPlayingText(null);
+    }
   };
 
   // Generic toggle function for play/pause/resume
@@ -476,42 +495,54 @@ const App = () => {
             onChange={handleChange}
             disabled={isSpeaking && !isPaused} // Disable input while speaking, but allow editing if paused
           ></textarea>
-          <button
-            onClick={() => handlePlaybackToggle(inputText)} // Use generic toggle for main input
-            className={`w-full text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition duration-300 ease-in-out text-xl
-                                    ${
-                                      isSpeaking && currentPlayingText === inputText && !isPaused
-                                        ? "bg-orange-500 hover:bg-orange-600" // Pause color
-                                        : isSpeaking && currentPlayingText === inputText && isPaused
-                                        ? "bg-green-600 hover:bg-green-700" // Resume color
-                                        : "bg-purple-600 hover:bg-purple-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300"
-                                    }`}
-          >
-            {isSpeaking && currentPlayingText === inputText && !isPaused
-              ? "Pausar"
-              : isSpeaking && currentPlayingText === inputText && isPaused
-              ? "Continuar"
-              : "Falar"}
-            <svg
-              className="inline-block ml-2 w-6 h-6"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
+          <div className="flex gap-2 mt-4"> {/* Flex container for buttons */}
+            <button
+              onClick={() => handlePlaybackToggle(inputText)} // Use generic toggle for main input
+              className={`flex-1 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition duration-300 ease-in-out text-xl
+                                      ${
+                                        isSpeaking && currentPlayingText === inputText && !isPaused
+                                          ? "bg-orange-500 hover:bg-orange-600" // Pause color
+                                          : isSpeaking && currentPlayingText === inputText && isPaused
+                                          ? "bg-green-600 hover:bg-green-700" // Resume color
+                                          : "bg-purple-600 hover:bg-purple-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300"
+                                      }`}
             >
-              <path
-                fillRule="evenodd"
-                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                clipRule="evenodd"
-              ></path>
-            </svg>
-          </button>
+              {isSpeaking && currentPlayingText === inputText && !isPaused
+                ? "Pausar"
+                : isSpeaking && currentPlayingText === inputText && isPaused
+                ? "Continuar"
+                : "Falar"}
+              <svg
+                className="inline-block ml-2 w-6 h-6"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clipRule="evenodd"
+                ></path>
+              </svg>
+            </button>
+            {inputText && ( // Show clear button only when there's text
+              <button
+                onClick={handleClearInput}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition duration-300 ease-in-out text-xl flex-shrink-0"
+                title="Limpar mensagem"
+                disabled={isSpeaking} // Disable while speaking
+              >
+                Limpar
+                <svg className="inline-block ml-2 w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 000-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd"></path>
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Quick Phrases Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            Frases Rápidas
-          </h2>
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="quickPhrases">
               {(provided) => (
@@ -689,7 +720,7 @@ const App = () => {
           Desenvolvido por <span className="text-red-500">Alan Regis</span> para
           facilitar a comunicação.
         </p>
-        <p className="text-gray-400 text-xs mt-1">v1.0.2</p>
+        <p className="text-gray-400 text-xs mt-1">v1.0.3</p>
       </div>
 
       {/* Message Modal */}
