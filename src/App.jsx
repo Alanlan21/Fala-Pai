@@ -19,12 +19,18 @@ const MessageModal = ({ message, onClose }) => {
 };
 
 // Custom Input Modal Component for adding/editing phrases
-const InputModal = ({ title, placeholder, onConfirm, onCancel, initialValue = '' }) => {
+const InputModal = ({
+  title,
+  placeholder,
+  onConfirm,
+  onCancel,
+  initialValue = "",
+}) => {
   const [inputValue, setInputValue] = useState(initialValue);
 
   const handleConfirm = () => {
     onConfirm(inputValue);
-    setInputValue(''); // Clear input after confirming
+    setInputValue(""); // Clear input after confirming
   };
 
   return (
@@ -43,7 +49,7 @@ const InputModal = ({ title, placeholder, onConfirm, onCancel, initialValue = ''
             onClick={handleConfirm}
             className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 mr-2"
           >
-            {initialValue ? 'Salvar Edição' : 'Adicionar'}
+            {initialValue ? "Salvar Edição" : "Adicionar"}
           </button>
           <button
             onClick={onCancel}
@@ -82,7 +88,12 @@ const ConfirmationModal = ({ message, onConfirm, onCancel }) => {
   );
 };
 
-const AddLongTextModal = ({ onConfirm, onCancel, initialTitle = '', initialContent = '' }) => {
+const AddLongTextModal = ({
+  onConfirm,
+  onCancel,
+  initialTitle = "",
+  initialContent = "",
+}) => {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
 
@@ -90,7 +101,7 @@ const AddLongTextModal = ({ onConfirm, onCancel, initialTitle = '', initialConte
     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full text-left">
         <h3 className="text-xl font-bold text-gray-800 mb-4">
-          {initialTitle ? 'Editar Frase Longa' : 'Nova Frase Longa'}
+          {initialTitle ? "Editar Frase Longa" : "Nova Frase Longa"}
         </h3>
         <input
           type="text"
@@ -118,7 +129,7 @@ const AddLongTextModal = ({ onConfirm, onCancel, initialTitle = '', initialConte
               if (title && content) onConfirm({ title, content });
             }}
           >
-            {initialTitle ? 'Salvar Edição' : 'Salvar'}
+            {initialTitle ? "Salvar Edição" : "Salvar"}
           </button>
         </div>
       </div>
@@ -133,18 +144,20 @@ const App = () => {
   // State for managing quick phrases (carregadas do localStorage se disponíveis)
   const [quickPhrases, setQuickPhrases] = useState(() => {
     const saved = localStorage.getItem("quickPhrases");
-    return saved ? JSON.parse(saved) : [
-      "Alan, precisamos comprar banana",
-      "Denis, você pode me ajudar?",
-      "Preciso de ajuda, por favor.",
-      "Estou com sede.",
-      "Estou com fome.",
-      "Sim",
-      "Não",
-      "Obrigado(a)",
-      "Estou bem",
-      "Não entendi",
-    ];
+    return saved
+      ? JSON.parse(saved)
+      : [
+          "Alan, precisamos comprar banana",
+          "Denis, você pode me ajudar?",
+          "Preciso de ajuda, por favor.",
+          "Estou com sede.",
+          "Estou com fome.",
+          "Sim",
+          "Não",
+          "Obrigado(a)",
+          "Estou bem",
+          "Não entendi",
+        ];
   });
 
   const [savedTexts, setSavedTexts] = useState(() => {
@@ -153,9 +166,9 @@ const App = () => {
   });
 
   const [showAddLongTextModal, setShowAddLongTextModal] = useState(false);
-  const [showDeleteLongTextConfirmModal, setShowDeleteLongTextConfirmModal] = useState(false);
+  const [showDeleteLongTextConfirmModal, setShowDeleteLongTextConfirmModal] =
+    useState(false);
   const [longTextToDelete, setLongTextToDelete] = useState(null);
-
 
   useEffect(() => {
     localStorage.setItem("savedTexts", JSON.stringify(savedTexts));
@@ -165,7 +178,7 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem("quickPhrases", JSON.stringify(quickPhrases));
   }, [quickPhrases]);
-  
+
   // State for loading status during speech synthesis
   const [isSpeaking, setIsSpeaking] = useState(false);
   // State to track if speech is currently paused
@@ -184,6 +197,9 @@ const App = () => {
   const inputRef = useRef(null);
   // Ref to store the Audio object for controlling playback
   const audioRef = useRef(null);
+
+  // State for speech playback speed (0.75 = devagar, 1.0 = normal, 1.25 = rápido)
+  const [speechSpeed, setSpeechSpeed] = useState(1.0);
 
   // ElevenLabs API configuration
   // IMPORTANT: The API key will be provided by the Canvas environment at runtime.
@@ -206,9 +222,9 @@ const App = () => {
 
     // If there's already audio playing, stop it before starting new speech
     if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0; // Reset playback to start
-        URL.revokeObjectURL(audioRef.current.src); // Clean up previous object URL
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0; // Reset playback to start
+      URL.revokeObjectURL(audioRef.current.src); // Clean up previous object URL
     }
 
     setIsSpeaking(true); // Set speaking state to true
@@ -233,7 +249,7 @@ const App = () => {
               similarity_boost: 0.75, // Adjust for more or less similarity to the base voice
             },
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -242,11 +258,11 @@ const App = () => {
 
         if (response.status === 401) {
           setModalMessage(
-            "Erro de autenticação (401): A chave da API do ElevenLabs pode estar ausente ou inválida. Por favor, verifique a configuração do seu ambiente."
+            "Erro de autenticação (401): A chave da API do ElevenLabs pode estar ausente ou inválida. Por favor, verifique a configuração do seu ambiente.",
           );
         } else {
           setModalMessage(
-            `Erro ao gerar a fala: ${response.status}. Por favor, tente novamente.`
+            `Erro ao gerar a fala: ${response.status}. Por favor, tente novamente.`,
           );
         }
         setIsSpeaking(false);
@@ -261,7 +277,11 @@ const App = () => {
       // Create and play the audio
       const audio = new Audio(audioUrl);
       audioRef.current = audio; // Store the audio object in the ref
+      audio.playbackRate = speechSpeed;
       audio.play();
+
+      // Feedback háptico ao iniciar a fala
+      if (navigator.vibrate) navigator.vibrate(200);
 
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl); // Clean up the object URL after playback
@@ -276,11 +296,10 @@ const App = () => {
         setIsPaused(false);
         setCurrentPlayingText(null); // Clear current playing text on error
       };
-
     } catch (error) {
       console.error("Erro ao conectar com ElevenLabs:", error);
       setModalMessage(
-        "Não foi possível conectar ao serviço de fala. Verifique sua conexão com a internet."
+        "Não foi possível conectar ao serviço de fala. Verifique sua conexão com a internet.",
       );
       setIsSpeaking(false);
       setIsPaused(false);
@@ -338,7 +357,8 @@ const App = () => {
   };
 
   // --- Quick Phrase Edit/Add Logic ---
-  const [showEditQuickPhraseModal, setShowEditQuickPhraseModal] = useState(false);
+  const [showEditQuickPhraseModal, setShowEditQuickPhraseModal] =
+    useState(false);
   const [editingQuickPhrase, setEditingQuickPhrase] = useState(null); // Stores the phrase being edited
 
   // Handle adding a new quick phrase - opens the input modal
@@ -358,12 +378,17 @@ const App = () => {
     if (newPhraseValue && newPhraseValue.trim()) {
       if (editingQuickPhrase) {
         // Editing existing phrase
-        setQuickPhrases(prevPhrases =>
-          prevPhrases.map(p => (p === editingQuickPhrase ? newPhraseValue.trim() : p))
+        setQuickPhrases((prevPhrases) =>
+          prevPhrases.map((p) =>
+            p === editingQuickPhrase ? newPhraseValue.trim() : p,
+          ),
         );
       } else {
         // Adding new phrase
-        setQuickPhrases(prevPhrases => [...prevPhrases, newPhraseValue.trim()]);
+        setQuickPhrases((prevPhrases) => [
+          ...prevPhrases,
+          newPhraseValue.trim(),
+        ]);
       }
     }
     setShowAddPhraseModal(false);
@@ -418,12 +443,12 @@ const App = () => {
     if (newItemValue.title && newItemValue.content) {
       if (editingLongText) {
         // Editing existing long text
-        setSavedTexts(prevTexts =>
-          prevTexts.map(t => (t === editingLongText ? newItemValue : t))
+        setSavedTexts((prevTexts) =>
+          prevTexts.map((t) => (t === editingLongText ? newItemValue : t)),
         );
       } else {
         // Adding new long text
-        setSavedTexts(prevTexts => [...prevTexts, newItemValue]);
+        setSavedTexts((prevTexts) => [...prevTexts, newItemValue]);
       }
     }
     setShowAddLongTextModal(false);
@@ -472,18 +497,47 @@ const App = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-500 to-indigo-600 flex flex-col items-center justify-center p-4 font-inter">
       <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl text-center">
         {/* Título estilizado */}
-        <h1 className="text-6xl font-extrabold mb-6" style={{
-          background: 'linear-gradient(45deg, #8B5CF6, #EC4899)', /* Gradiente de roxo para rosa */
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          textShadow: '2px 2px 4px rgba(0,0,0,0.2)', /* Sombra sutil */
-          letterSpacing: '0.05em' /* Espaçamento entre letras */
-        }}>
+        <h1
+          className="text-6xl font-extrabold mb-6"
+          style={{
+            background:
+              "linear-gradient(45deg, #8B5CF6, #EC4899)" /* Gradiente de roxo para rosa */,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            textShadow: "2px 2px 4px rgba(0,0,0,0.2)" /* Sombra sutil */,
+            letterSpacing: "0.05em" /* Espaçamento entre letras */,
+          }}
+        >
           FalaPai
         </h1>
         <p className="text-gray-600 mb-8 text-lg">
           Olá Carlos, sou seu assistente de comunicação inteligente.
         </p>
+
+        {/* Controle de velocidade da voz */}
+        <div className="mb-6">
+          <p className="text-gray-500 text-sm mb-2">Velocidade da voz</p>
+          <div className="flex gap-2 justify-center">
+            {[
+              { label: "🐢 Devagar", value: 0.75 },
+              { label: "▶️ Normal", value: 1.0 },
+              { label: "🐇 Rápido", value: 1.25 },
+            ].map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={() => setSpeechSpeed(value)}
+                className={`flex-1 py-2 px-3 rounded-xl font-semibold text-sm transition duration-200
+                  ${
+                    speechSpeed === value
+                      ? "bg-purple-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Text Input and Speak Button */}
         <div className="mb-8">
@@ -495,23 +549,30 @@ const App = () => {
             onChange={handleChange}
             disabled={isSpeaking && !isPaused} // Disable input while speaking, but allow editing if paused
           ></textarea>
-          <div className="flex gap-2 mt-4"> {/* Flex container for buttons */}
+          <div className="flex gap-2 mt-4">
+            {" "}
+            {/* Flex container for buttons */}
             <button
               onClick={() => handlePlaybackToggle(inputText)} // Use generic toggle for main input
               className={`flex-1 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition duration-300 ease-in-out text-xl
                                       ${
-                                        isSpeaking && currentPlayingText === inputText && !isPaused
+                                        isSpeaking &&
+                                        currentPlayingText === inputText &&
+                                        !isPaused
                                           ? "bg-orange-500 hover:bg-orange-600" // Pause color
-                                          : isSpeaking && currentPlayingText === inputText && isPaused
-                                          ? "bg-green-600 hover:bg-green-700" // Resume color
-                                          : "bg-purple-600 hover:bg-purple-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300"
+                                          : isSpeaking &&
+                                              currentPlayingText ===
+                                                inputText &&
+                                              isPaused
+                                            ? "bg-green-600 hover:bg-green-700" // Resume color
+                                            : "bg-purple-600 hover:bg-purple-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300"
                                       }`}
             >
               {isSpeaking && currentPlayingText === inputText && !isPaused
                 ? "Pausar"
                 : isSpeaking && currentPlayingText === inputText && isPaused
-                ? "Continuar"
-                : "Falar"}
+                  ? "Continuar"
+                  : "Falar"}
               <svg
                 className="inline-block ml-2 w-6 h-6"
                 fill="currentColor"
@@ -533,8 +594,17 @@ const App = () => {
                 disabled={isSpeaking} // Disable while speaking
               >
                 Limpar
-                <svg className="inline-block ml-2 w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 000-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd"></path>
+                <svg
+                  className="inline-block ml-2 w-6 h-6"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 000-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z"
+                    clipRule="evenodd"
+                  ></path>
                 </svg>
               </button>
             )}
@@ -558,8 +628,8 @@ const App = () => {
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           className={`relative rounded-xl shadow-md transform transition duration-200 ease-in-out
-                                      ${snapshot.isDragging ? 'bg-blue-200 scale-105' : ''}
-                                      ${isSpeaking && currentPlayingText !== phrase ? 'opacity-50' : ''}
+                                      ${snapshot.isDragging ? "bg-blue-200 scale-105" : ""}
+                                      ${isSpeaking && currentPlayingText !== phrase ? "opacity-50" : ""}
                                       flex items-center gap-2 p-1`}
                           style={{ ...provided.draggableProps.style }}
                         >
@@ -575,22 +645,35 @@ const App = () => {
                             onClick={() => handleQuickPhraseClick(phrase)}
                             className={`flex-1 text-white font-semibold py-3 px-4 rounded-xl pr-[4.5rem] // Ajuste o padding-right para dar espaço aos botões
                                                 ${
-                                                  isSpeaking && currentPlayingText !== phrase
+                                                  isSpeaking &&
+                                                  currentPlayingText !== phrase
                                                     ? "bg-gray-400 cursor-not-allowed" // Disable if another text is playing
-                                                    : isSpeaking && currentPlayingText === phrase && !isPaused
-                                                    ? "bg-orange-500 hover:bg-orange-600" // Pause color
-                                                    : isSpeaking && currentPlayingText === phrase && isPaused
-                                                    ? "bg-green-600 hover:bg-green-700" // Resume color
-                                                    : "bg-blue-500 hover:bg-blue-600 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                                    : isSpeaking &&
+                                                        currentPlayingText ===
+                                                          phrase &&
+                                                        !isPaused
+                                                      ? "bg-orange-500 hover:bg-orange-600" // Pause color
+                                                      : isSpeaking &&
+                                                          currentPlayingText ===
+                                                            phrase &&
+                                                          isPaused
+                                                        ? "bg-green-600 hover:bg-green-700" // Resume color
+                                                        : "bg-blue-500 hover:bg-blue-600 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
                                                 }
                                                 overflow-hidden text-ellipsis whitespace-nowrap`}
-                            disabled={isSpeaking && currentPlayingText !== phrase} // Disable button if another text is playing
+                            disabled={
+                              isSpeaking && currentPlayingText !== phrase
+                            } // Disable button if another text is playing
                           >
-                            {isSpeaking && currentPlayingText === phrase && !isPaused
+                            {isSpeaking &&
+                            currentPlayingText === phrase &&
+                            !isPaused
                               ? "Pausar"
-                              : isSpeaking && currentPlayingText === phrase && isPaused
-                              ? "Continuar"
-                              : phrase}
+                              : isSpeaking &&
+                                  currentPlayingText === phrase &&
+                                  isPaused
+                                ? "Continuar"
+                                : phrase}
                           </button>
                           {/* Container para os botões de ação para melhor posicionamento */}
                           <div className="absolute top-1 right-1 flex gap-1">
@@ -668,21 +751,30 @@ const App = () => {
                     onClick={() => handlePlaybackToggle(item.content)} // Use generic toggle for long texts
                     className={`text-white px-4 py-2 rounded
                                 ${
-                                  isSpeaking && currentPlayingText !== item.content
+                                  isSpeaking &&
+                                  currentPlayingText !== item.content
                                     ? "bg-gray-400 cursor-not-allowed" // Disable if another text is playing
-                                    : isSpeaking && currentPlayingText === item.content && !isPaused
-                                    ? "bg-orange-500 hover:bg-orange-600" // Pause color
-                                    : isSpeaking && currentPlayingText === item.content && isPaused
-                                    ? "bg-green-600 hover:bg-green-700" // Resume color
-                                    : "bg-purple-600 hover:bg-purple-700"
+                                    : isSpeaking &&
+                                        currentPlayingText === item.content &&
+                                        !isPaused
+                                      ? "bg-orange-500 hover:bg-orange-600" // Pause color
+                                      : isSpeaking &&
+                                          currentPlayingText === item.content &&
+                                          isPaused
+                                        ? "bg-green-600 hover:bg-green-700" // Resume color
+                                        : "bg-purple-600 hover:bg-purple-700"
                                 }`}
                     disabled={isSpeaking && currentPlayingText !== item.content} // Disable button if another text is playing
                   >
-                    {isSpeaking && currentPlayingText === item.content && !isPaused
+                    {isSpeaking &&
+                    currentPlayingText === item.content &&
+                    !isPaused
                       ? "Pausar"
-                      : isSpeaking && currentPlayingText === item.content && isPaused
-                      ? "Continuar"
-                      : "Falar"}
+                      : isSpeaking &&
+                          currentPlayingText === item.content &&
+                          isPaused
+                        ? "Continuar"
+                        : "Falar"}
                   </button>
                   {/* Edit button for Long Saved Texts */}
                   <button
@@ -714,7 +806,6 @@ const App = () => {
           </div>
         </div>
 
-
         {/* Footer */}
         <p className="text-gray-500 text-sm mt-8">
           Desenvolvido por <span className="text-red-500">Alan Regis</span> para
@@ -731,9 +822,13 @@ const App = () => {
       {/* Add/Edit Quick Phrase Modal */}
       {(showAddPhraseModal || showEditQuickPhraseModal) && (
         <InputModal
-          title={editingQuickPhrase ? "Editar Frase Rápida" : "Adicionar Nova Frase Rápida"}
+          title={
+            editingQuickPhrase
+              ? "Editar Frase Rápida"
+              : "Adicionar Nova Frase Rápida"
+          }
           placeholder="Digite a frase aqui..."
-          initialValue={editingQuickPhrase || ''}
+          initialValue={editingQuickPhrase || ""}
           onConfirm={confirmQuickPhrase}
           onCancel={cancelQuickPhraseModal}
         />
@@ -742,8 +837,8 @@ const App = () => {
       {/* Add/Edit Long Text Modal */}
       {(showAddLongTextModal || showEditLongTextModal) && (
         <AddLongTextModal
-          initialTitle={editingLongText ? editingLongText.title : ''}
-          initialContent={editingLongText ? editingLongText.content : ''}
+          initialTitle={editingLongText ? editingLongText.title : ""}
+          initialContent={editingLongText ? editingLongText.content : ""}
           onConfirm={confirmLongText}
           onCancel={cancelLongTextModal}
         />
